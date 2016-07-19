@@ -16,10 +16,22 @@ RUN wget -nv --no-cookies --no-check-certificate \
      yum localinstall -y /tmp/jdk-${JAVA_MAJOR}u${JAVA_UPDATE}-linux-x64.rpm && \
      rm -f /tmp/jdk-${JAVA_MAJOR}u${JAVA_UPDATE}-linux-x64.rpm
 
+ENV JAVA_HOME=/usr/java/jdk1.8.0_${JAVA_UPDATE}
+
+#RUN curl https://bintray.com/sbt/rpm/rpm | tee /etc/yum.repos.d/bintray-sbt-rpm.repo && \
+#    yum install -y sbt
+
+RUN mkdir -p /tmp && \
+    cd /tmp && \
+    wget https://dl.bintray.com/sbt/rpm/sbt-0.13.9.rpm && \
+    yum localinstall -y sbt-0.13.9.rpm
+
+RUN sbt debug update
+
 ENV JAVA_HOME=/usr/java/jdk1.8.0_${JAVA_UPDATE} \
     ZK_HOSTS=localhost:2181 \
-    KM_VERSION=1.3.0.8 \
-    KM_REVISION=6e196ea7a332471bead747535f9676f0a2bad008 \
+    KM_VERSION=1.3.1.6 \
+    KM_REVISION=6cf43e383377a6b37df4faa04d9aff515a265b30 \
     KM_CONFIGFILE="conf/application.conf"
 
 RUN mkdir -p /tmp && \
@@ -28,7 +40,10 @@ RUN mkdir -p /tmp && \
     cd /tmp/kafka-manager && \
     git checkout ${KM_REVISION} && \
     echo 'scalacOptions ++= Seq("-Xmax-classfile-name", "200")' >> build.sbt && \
-    ./sbt clean dist && \
+    ./sbt clean dist
+
+RUN mkdir -p /tmp && \
+    cd /tmp/kafka-manager && \
     unzip  -d / ./target/universal/kafka-manager-${KM_VERSION}.zip && \
     rm -fr /tmp/* /root/.sbt /root/.ivy2 && \
     printf '#!/bin/sh\nexec ./bin/kafka-manager -Dconfig.file=${KM_CONFIGFILE} "${KM_ARGS}" "${@}"\n' > /kafka-manager-${KM_VERSION}/km.sh && \
